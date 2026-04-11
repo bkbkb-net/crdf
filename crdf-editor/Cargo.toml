@@ -4,13 +4,21 @@ version = "0.1.0"
 license.workspace = true
 repository.workspace = true
 description = "A visual RDF graph editor powered by crdf and egui."
+documentation = "https://docs.rs/crdf-editor/"
 edition.workspace = true
+readme = "README.md"
+keywords = ["rdf", "crdt", "egui", "graph", "editor"]
+categories = ["visualization", "gui"]
 
 [dependencies]
-crdf = { path = "../crdf" }
+crdf = { version = "0.1.0", path = "../crdf" }
 eframe = "0.34.1"
 egui = "0.34.1"
-rfd = "0.17.2"
+rfd = { version = "0.17.2", optional = true }
+
+[features]
+default = ["native-dialog"]
+native-dialog = ["dep:rfd"]
 
 [dev-dependencies]
 egui_kittest = { version = "0.34.1", features = ["eframe"] }

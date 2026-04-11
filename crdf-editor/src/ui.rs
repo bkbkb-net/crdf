@@ -1,4 +1,6 @@
-use crdf::{Literal, RdfFileFormat, RdfGraph, RdfTerm};
+use crdf::RdfTerm;
+#[cfg(feature = "native-dialog")]
+use crdf::{Literal, RdfFileFormat, RdfGraph};
 
 use crate::app::CrdfEditorApp;
 use crate::graph_view::NodeType;
@@ -21,88 +23,93 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
     #[allow(deprecated)]
     egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
         egui::menu::bar(ui, |ui| {
-            ui.menu_button("File", |ui| {
-                if ui.button("📂 Open…").clicked() {
-                    ui.close_menu();
-                    if let Some(path) = rfd::FileDialog::new()
-                        .add_filter("CRDF (FlatBuffers)", &["crdf"])
-                        .add_filter("N-Triples", &["nt"])
-                        .pick_file()
-                    {
-                        let result = match path.extension().and_then(|e| e.to_str()) {
-                            Some("crdf") => {
-                                RdfGraph::read_flatbuffers_file(&path).map_err(|e| e.to_string())
-                            }
-                            _ => load_ntriples(&path),
-                        };
-                        match result {
-                            Ok(graph) => {
-                                app.rdf_graph = graph;
-                                app.undo_manager.clear();
-                                app.interaction = Default::default();
-                                app.side_panel.pending_edge = None;
-                                app.side_panel.pending_edge_predicate.clear();
-                                app.node_positions.clear();
-                                app.ensure_node_positions();
-                                app.layout.running = true;
-                                app.layout.reset_temperature();
-                                app.side_panel.file_path = Some(path.clone());
-                                let time = ui.input(|i| i.time);
-                                app.set_status(format!("Loaded: {}", path.display()), time);
-                            }
-                            Err(e) => {
-                                let time = ui.input(|i| i.time);
-                                app.set_status(format!("Error: {e}"), time);
+            ui.menu_button("File", |_ui| {
+                #[cfg(feature = "native-dialog")]
+                #[allow(unused_variables)]
+                let ui = _ui;
+                #[cfg(feature = "native-dialog")]
+                {
+                    if ui.button("📂 Open…").clicked() {
+                        ui.close_menu();
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("CRDF (FlatBuffers)", &["crdf"])
+                            .add_filter("N-Triples", &["nt"])
+                            .pick_file()
+                        {
+                            let result = match path.extension().and_then(|e| e.to_str()) {
+                                Some("crdf") => RdfGraph::read_flatbuffers_file(&path)
+                                    .map_err(|e| e.to_string()),
+                                _ => load_ntriples(&path),
+                            };
+                            match result {
+                                Ok(graph) => {
+                                    app.rdf_graph = graph;
+                                    app.undo_manager.clear();
+                                    app.interaction = Default::default();
+                                    app.side_panel.pending_edge = None;
+                                    app.side_panel.pending_edge_predicate.clear();
+                                    app.node_positions.clear();
+                                    app.ensure_node_positions();
+                                    app.layout.running = true;
+                                    app.layout.reset_temperature();
+                                    app.side_panel.file_path = Some(path.clone());
+                                    let time = ui.input(|i| i.time);
+                                    app.set_status(format!("Loaded: {}", path.display()), time);
+                                }
+                                Err(e) => {
+                                    let time = ui.input(|i| i.time);
+                                    app.set_status(format!("Error: {e}"), time);
+                                }
                             }
                         }
                     }
-                }
-                if ui.button("💾 Save").clicked() {
-                    ui.close_menu();
-                    let save_path = if let Some(ref existing) = app.side_panel.file_path {
-                        Some(existing.clone())
-                    } else {
-                        rfd::FileDialog::new()
+                    if ui.button("💾 Save").clicked() {
+                        ui.close_menu();
+                        let save_path = if let Some(ref existing) = app.side_panel.file_path {
+                            Some(existing.clone())
+                        } else {
+                            rfd::FileDialog::new()
+                                .add_filter("CRDF (FlatBuffers)", &["crdf"])
+                                .add_filter("N-Triples", &["nt"])
+                                .save_file()
+                        };
+                        if let Some(path) = save_path {
+                            let format = format_for_path(&path);
+                            match app.rdf_graph.write_rdf_file(&path, format) {
+                                Ok(()) => {
+                                    app.side_panel.file_path = Some(path.clone());
+                                    let time = ui.input(|i| i.time);
+                                    app.set_status(format!("Saved: {}", path.display()), time);
+                                }
+                                Err(e) => {
+                                    let time = ui.input(|i| i.time);
+                                    app.set_status(format!("Save error: {e}"), time);
+                                }
+                            }
+                        }
+                    }
+                    if ui.button("💾 Save As…").clicked() {
+                        ui.close_menu();
+                        if let Some(path) = rfd::FileDialog::new()
                             .add_filter("CRDF (FlatBuffers)", &["crdf"])
                             .add_filter("N-Triples", &["nt"])
                             .save_file()
-                    };
-                    if let Some(path) = save_path {
-                        let format = format_for_path(&path);
-                        match app.rdf_graph.write_rdf_file(&path, format) {
-                            Ok(()) => {
-                                app.side_panel.file_path = Some(path.clone());
-                                let time = ui.input(|i| i.time);
-                                app.set_status(format!("Saved: {}", path.display()), time);
-                            }
-                            Err(e) => {
-                                let time = ui.input(|i| i.time);
-                                app.set_status(format!("Save error: {e}"), time);
-                            }
-                        }
-                    }
-                }
-                if ui.button("💾 Save As…").clicked() {
-                    ui.close_menu();
-                    if let Some(path) = rfd::FileDialog::new()
-                        .add_filter("CRDF (FlatBuffers)", &["crdf"])
-                        .add_filter("N-Triples", &["nt"])
-                        .save_file()
-                    {
-                        let format = format_for_path(&path);
-                        match app.rdf_graph.write_rdf_file(&path, format) {
-                            Ok(()) => {
-                                app.side_panel.file_path = Some(path.clone());
-                                let time = ui.input(|i| i.time);
-                                app.set_status(format!("Saved: {}", path.display()), time);
-                            }
-                            Err(e) => {
-                                let time = ui.input(|i| i.time);
-                                app.set_status(format!("Save error: {e}"), time);
+                        {
+                            let format = format_for_path(&path);
+                            match app.rdf_graph.write_rdf_file(&path, format) {
+                                Ok(()) => {
+                                    app.side_panel.file_path = Some(path.clone());
+                                    let time = ui.input(|i| i.time);
+                                    app.set_status(format!("Saved: {}", path.display()), time);
+                                }
+                                Err(e) => {
+                                    let time = ui.input(|i| i.time);
+                                    app.set_status(format!("Save error: {e}"), time);
+                                }
                             }
                         }
                     }
-                }
+                } // #[cfg(feature = "native-dialog")]
             });
 
             ui.menu_button("Edit", |ui| {
@@ -683,6 +690,7 @@ fn node_type_str(term: &RdfTerm) -> &'static str {
     }
 }
 
+#[cfg(feature = "native-dialog")]
 fn format_for_path(path: &std::path::Path) -> RdfFileFormat {
     match path.extension().and_then(|e| e.to_str()) {
         Some("crdf") => RdfFileFormat::FlatBuffers,
@@ -690,6 +698,7 @@ fn format_for_path(path: &std::path::Path) -> RdfFileFormat {
     }
 }
 
+#[cfg(feature = "native-dialog")]
 fn load_ntriples(path: &std::path::Path) -> Result<RdfGraph, String> {
     let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
     let mut graph = RdfGraph::new();
@@ -715,6 +724,7 @@ fn load_ntriples(path: &std::path::Path) -> Result<RdfGraph, String> {
     Ok(graph)
 }
 
+#[cfg(feature = "native-dialog")]
 fn parse_ntriple_line(line: &str) -> Option<(RdfTerm, String, RdfTerm)> {
     let line = line.trim();
     let line = line.strip_suffix('.')?;
@@ -749,12 +759,14 @@ fn parse_ntriple_line(line: &str) -> Option<(RdfTerm, String, RdfTerm)> {
     Some((subject_rdf, predicate_term, object_rdf))
 }
 
+#[cfg(feature = "native-dialog")]
 enum ParsedTerm {
     Iri(String),
     BlankNode(String),
     Literal(String, Option<String>, Option<String>),
 }
 
+#[cfg(feature = "native-dialog")]
 fn parse_term(input: &str) -> Option<(ParsedTerm, &str)> {
     let input = input.trim_start();
     if input.starts_with('<') {
@@ -772,6 +784,7 @@ fn parse_term(input: &str) -> Option<(ParsedTerm, &str)> {
     }
 }
 
+#[cfg(feature = "native-dialog")]
 fn parse_iri(input: &str) -> Option<(String, &str)> {
     if !input.starts_with('<') {
         return None;
@@ -781,6 +794,7 @@ fn parse_iri(input: &str) -> Option<(String, &str)> {
     Some((iri.to_string(), &input[end + 1..]))
 }
 
+#[cfg(feature = "native-dialog")]
 fn parse_literal(input: &str) -> Option<(ParsedTerm, &str)> {
     if !input.starts_with('"') {
         return None;

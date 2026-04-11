@@ -19,6 +19,12 @@ pub struct CrdfEditorApp {
     pub status_message: Option<(String, f64)>,
 }
 
+impl Default for CrdfEditorApp {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CrdfEditorApp {
     pub fn new() -> Self {
         Self {
