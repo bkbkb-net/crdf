@@ -38,8 +38,7 @@ impl TripleAction {
                 if !graph.contains_triple(&self.subject, &self.predicate, &self.object) {
                     return Ok(None);
                 }
-                let op =
-                    graph.remove_triple(&self.subject, &self.predicate, &self.object)?;
+                let op = graph.remove_triple(&self.subject, &self.predicate, &self.object)?;
                 Ok(Some(op))
             }
         }
@@ -158,10 +157,7 @@ impl UndoManager {
     ///
     /// Returns `Ok(None)` if the undo stack is empty or the inverse action is
     /// a no-op (e.g., an external operation already achieved the same effect).
-    pub fn undo(
-        &mut self,
-        graph: &mut RdfGraph,
-    ) -> Result<Option<RdfOperation>, CrdfError> {
+    pub fn undo(&mut self, graph: &mut RdfGraph) -> Result<Option<RdfOperation>, CrdfError> {
         let Some(action) = self.undo_stack.pop() else {
             return Ok(None);
         };
@@ -179,10 +175,7 @@ impl UndoManager {
     /// Redoes the last undone action, returning the broadcastable operation.
     ///
     /// Returns `Ok(None)` if the redo stack is empty or the action is a no-op.
-    pub fn redo(
-        &mut self,
-        graph: &mut RdfGraph,
-    ) -> Result<Option<RdfOperation>, CrdfError> {
+    pub fn redo(&mut self, graph: &mut RdfGraph) -> Result<Option<RdfOperation>, CrdfError> {
         let Some(action) = self.redo_stack.pop() else {
             return Ok(None);
         };

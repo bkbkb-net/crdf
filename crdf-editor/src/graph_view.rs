@@ -117,12 +117,12 @@ pub fn draw_graph(app: &mut CrdfEditorApp, ctx: &egui::Context) {
         }
 
         // Draw edge being created
-        if let Some(ref from_term) = app.interaction.creating_edge_from {
-            if let Some(&from_world) = app.node_positions.get(from_term) {
-                let from_screen = app.camera.world_to_screen(from_world, canvas_center);
-                if let Some(target_pos) = app.interaction.edge_drag_target {
-                    draw_edge_line(&painter, from_screen, target_pos, zoom, true);
-                }
+        if let Some(ref from_term) = app.interaction.creating_edge_from
+            && let Some(&from_world) = app.node_positions.get(from_term)
+        {
+            let from_screen = app.camera.world_to_screen(from_world, canvas_center);
+            if let Some(target_pos) = app.interaction.edge_drag_target {
+                draw_edge_line(&painter, from_screen, target_pos, zoom, true);
             }
         }
 
@@ -205,46 +205,46 @@ pub fn draw_graph(app: &mut CrdfEditorApp, ctx: &egui::Context) {
         }
 
         // Node dragging
-        if response.drag_started_by(egui::PointerButton::Primary) {
-            if let Some(pos) = pointer_pos {
-                // Check if starting edge creation from port
-                for (term, rect, _) in node_rects.iter().rev() {
-                    let port_pos = Pos2::new(rect.right(), rect.center().y);
-                    let port_r = PORT_RADIUS * zoom + 4.0;
-                    if (pos - port_pos).length() < port_r {
-                        app.interaction.creating_edge_from = Some(term.clone());
-                        break;
-                    }
+        if response.drag_started_by(egui::PointerButton::Primary)
+            && let Some(pos) = pointer_pos
+        {
+            // Check if starting edge creation from port
+            for (term, rect, _) in node_rects.iter().rev() {
+                let port_pos = Pos2::new(rect.right(), rect.center().y);
+                let port_r = PORT_RADIUS * zoom + 4.0;
+                if (pos - port_pos).length() < port_r {
+                    app.interaction.creating_edge_from = Some(term.clone());
+                    break;
                 }
+            }
 
-                // If not creating edge, start dragging node
-                if app.interaction.creating_edge_from.is_none() {
-                    for (term, rect, _) in node_rects.iter().rev() {
-                        if rect.contains(pos) {
-                            let world_pos = app.node_positions.get(term).copied().unwrap();
-                            let click_world = app.camera.screen_to_world(pos, canvas_center);
-                            app.interaction.dragging_node = Some(term.clone());
-                            app.interaction.drag_offset = world_pos - click_world;
-                            app.interaction.selected_node = Some(term.clone());
-                            break;
-                        }
+            // If not creating edge, start dragging node
+            if app.interaction.creating_edge_from.is_none() {
+                for (term, rect, _) in node_rects.iter().rev() {
+                    if rect.contains(pos) {
+                        let world_pos = app.node_positions.get(term).copied().unwrap();
+                        let click_world = app.camera.screen_to_world(pos, canvas_center);
+                        app.interaction.dragging_node = Some(term.clone());
+                        app.interaction.drag_offset = world_pos - click_world;
+                        app.interaction.selected_node = Some(term.clone());
+                        break;
                     }
                 }
             }
         }
 
-        if response.dragged_by(egui::PointerButton::Primary) {
-            if let Some(pos) = pointer_pos {
-                if let Some(ref dragging) = app.interaction.dragging_node {
-                    let world_pos = app.camera.screen_to_world(pos, canvas_center)
-                        + app.interaction.drag_offset;
-                    if let Some(p) = app.node_positions.get_mut(dragging) {
-                        *p = world_pos;
-                    }
+        if response.dragged_by(egui::PointerButton::Primary)
+            && let Some(pos) = pointer_pos
+        {
+            if let Some(ref dragging) = app.interaction.dragging_node {
+                let world_pos =
+                    app.camera.screen_to_world(pos, canvas_center) + app.interaction.drag_offset;
+                if let Some(p) = app.node_positions.get_mut(dragging) {
+                    *p = world_pos;
                 }
-                if app.interaction.creating_edge_from.is_some() {
-                    app.interaction.edge_drag_target = Some(pos);
-                }
+            }
+            if app.interaction.creating_edge_from.is_some() {
+                app.interaction.edge_drag_target = Some(pos);
             }
         }
 
@@ -271,29 +271,29 @@ pub fn draw_graph(app: &mut CrdfEditorApp, ctx: &egui::Context) {
         }
 
         // Click to select/deselect
-        if response.clicked() {
-            if let Some(pos) = pointer_pos {
-                let mut clicked_node = false;
-                for (term, rect, _) in node_rects.iter().rev() {
-                    if rect.contains(pos) {
-                        app.interaction.selected_node = Some(term.clone());
-                        clicked_node = true;
-                        break;
-                    }
+        if response.clicked()
+            && let Some(pos) = pointer_pos
+        {
+            let mut clicked_node = false;
+            for (term, rect, _) in node_rects.iter().rev() {
+                if rect.contains(pos) {
+                    app.interaction.selected_node = Some(term.clone());
+                    clicked_node = true;
+                    break;
                 }
-                if !clicked_node {
-                    app.interaction.selected_node = None;
-                }
+            }
+            if !clicked_node {
+                app.interaction.selected_node = None;
             }
         }
 
         // Undo: Ctrl+Z
-        if ui.input(|i| i.modifiers.ctrl && i.key_pressed(egui::Key::Z) && !i.modifiers.shift) {
-            if app.undo() {
-                app.remove_orphan_positions();
-                let time = ui.input(|i| i.time);
-                app.set_status("Undo", time);
-            }
+        if ui.input(|i| i.modifiers.ctrl && i.key_pressed(egui::Key::Z) && !i.modifiers.shift)
+            && app.undo()
+        {
+            app.remove_orphan_positions();
+            let time = ui.input(|i| i.time);
+            app.set_status("Undo", time);
         }
 
         // Redo: Ctrl+Y or Ctrl+Shift+Z
@@ -301,31 +301,30 @@ pub fn draw_graph(app: &mut CrdfEditorApp, ctx: &egui::Context) {
             i.modifiers.ctrl
                 && (i.key_pressed(egui::Key::Y)
                     || (i.modifiers.shift && i.key_pressed(egui::Key::Z)))
-        }) {
-            if app.redo() {
-                app.ensure_node_positions();
-                app.remove_orphan_positions();
-                let time = ui.input(|i| i.time);
-                app.set_status("Redo", time);
-            }
+        }) && app.redo()
+        {
+            app.ensure_node_positions();
+            app.remove_orphan_positions();
+            let time = ui.input(|i| i.time);
+            app.set_status("Redo", time);
         }
 
         // Delete key removes all triples for the selected node
-        if ui.input(|i| i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace)) {
-            if let Some(ref selected) = app.interaction.selected_node.clone() {
-                let subj_triples = app.rdf_graph.triples_for_subject(selected);
-                for t in &subj_triples {
-                    let _ = app.remove_triple(&t.subject, &t.predicate, &t.object);
-                }
-                let obj_triples = app.rdf_graph.triples_for_object(selected);
-                for t in &obj_triples {
-                    let _ = app.remove_triple(&t.subject, &t.predicate, &t.object);
-                }
-                app.remove_orphan_positions();
-                app.interaction.selected_node = None;
-                let time = ui.input(|i| i.time);
-                app.set_status("Node removed", time);
+        if ui.input(|i| i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace))
+            && let Some(ref selected) = app.interaction.selected_node.clone()
+        {
+            let subj_triples = app.rdf_graph.triples_for_subject(selected);
+            for t in &subj_triples {
+                let _ = app.remove_triple(&t.subject, &t.predicate, &t.object);
             }
+            let obj_triples = app.rdf_graph.triples_for_object(selected);
+            for t in &obj_triples {
+                let _ = app.remove_triple(&t.subject, &t.predicate, &t.object);
+            }
+            app.remove_orphan_positions();
+            app.interaction.selected_node = None;
+            let time = ui.input(|i| i.time);
+            app.set_status("Node removed", time);
         }
 
         // Context menu
@@ -546,15 +545,10 @@ fn lighten(color: Color32, amount: u8) -> Color32 {
 }
 
 // Re-export for use in ui.rs
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum NodeType {
+    #[default]
     Iri,
     Literal,
     BlankNode,
-}
-
-impl Default for NodeType {
-    fn default() -> Self {
-        Self::Iri
-    }
 }

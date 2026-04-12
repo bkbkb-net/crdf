@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::error::CrdfError;
 use crate::term::RdfTerm;
 use crate::triple::Triple;
-use crate::types::{remove_edge_op, AddEdge, AddVertex, Graph, RemoveEdge, RemoveVertex};
+use crate::types::{AddEdge, AddVertex, Graph, RemoveEdge, RemoveVertex, remove_edge_op};
 
 /// A compound operation representing an RDF triple addition.
 ///
@@ -30,7 +30,7 @@ pub struct RemoveTripleOp {
 #[derive(Clone, Debug)]
 pub enum RdfOperation {
     /// A triple was added to the graph.
-    AddTriple(AddTripleOp),
+    AddTriple(Box<AddTripleOp>),
     /// A triple was removed from the graph.
     RemoveTriple(RemoveTripleOp),
 }
@@ -122,11 +122,11 @@ impl RdfGraph {
 
         self.graph.prepare(edge.clone().into())?;
 
-        Ok(RdfOperation::AddTriple(AddTripleOp {
+        Ok(RdfOperation::AddTriple(Box::new(AddTripleOp {
             subject_vertex: subject_vertex_op,
             object_vertex: object_vertex_op,
             edge,
-        }))
+        })))
     }
 
     /// Removes a triple from the graph (atSource).

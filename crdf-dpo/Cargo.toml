@@ -11,5 +11,5 @@ keywords = ["rdf", "graph-rewriting", "dpo", "crdt"]
 categories = ["data-structures", "algorithms"]
 
 [dependencies]
-crdf = { path = "../crdf" }
+crdf = { version = "0.1.0", path = "../crdf" }
 thiserror = "2.0.18"

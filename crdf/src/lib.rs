@@ -1,7 +1,7 @@
 #![doc = include_str!("../README.md")]
 
-pub mod flatbuffers;
 mod error;
+pub mod flatbuffers;
 mod graph;
 mod term;
 mod triple;

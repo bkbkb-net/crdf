@@ -17,6 +17,12 @@ const INITIAL_TEMP: f32 = 10.0;
 const COOLING: f32 = 0.995;
 const STEPS_PER_FRAME: usize = 3;
 
+impl Default for ForceLayout {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ForceLayout {
     pub fn new() -> Self {
         Self {
@@ -31,11 +37,7 @@ impl ForceLayout {
         self.iterations = 0;
     }
 
-    pub fn step(
-        &mut self,
-        positions: &mut HashMap<RdfTerm, Pos2>,
-        triples: &[Triple],
-    ) {
+    pub fn step(&mut self, positions: &mut HashMap<RdfTerm, Pos2>, triples: &[Triple]) {
         if positions.len() < 2 {
             return;
         }
@@ -52,11 +54,7 @@ impl ForceLayout {
         }
     }
 
-    fn single_step(
-        &self,
-        positions: &mut HashMap<RdfTerm, Pos2>,
-        triples: &[Triple],
-    ) {
+    fn single_step(&self, positions: &mut HashMap<RdfTerm, Pos2>, triples: &[Triple]) {
         let terms: Vec<RdfTerm> = positions.keys().cloned().collect();
         let mut forces: HashMap<RdfTerm, egui::Vec2> = HashMap::new();
         for t in &terms {

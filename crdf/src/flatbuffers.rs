@@ -1,10 +1,10 @@
 use crdt_graph::UpdateOperation;
-use crdt_graph::flatbuffers::string as fb_string;
 use crdt_graph::flatbuffers::DecodeError;
+use crdt_graph::flatbuffers::string as fb_string;
 use crdt_graph::types::string as str_types;
 use crdt_graph::types::{RemoveEdge, RemoveVertex};
 
-use crate::term::{Literal, RdfTerm, RDF_LANG_STRING, XSD_STRING};
+use crate::term::{Literal, RDF_LANG_STRING, RdfTerm, XSD_STRING};
 use crate::types::{AddEdge, AddVertex, GraphOperation};
 
 // ---------------------------------------------------------------------------
@@ -114,18 +114,12 @@ fn crdf_to_str_ops(
 fn str_op_to_crdf(op: str_types::Operation) -> Result<GraphOperation, DecodeError> {
     match op {
         UpdateOperation::AddVertex(v) => {
-            let term = decode_term(
-                v.data
-                    .as_deref()
-                    .ok_or(DecodeError::UnknownOperationType)?,
-            )?;
+            let term = decode_term(v.data.as_deref().ok_or(DecodeError::UnknownOperationType)?)?;
             Ok(UpdateOperation::AddVertex(AddVertex { id: v.id, term }))
         }
         UpdateOperation::RemoveVertex(v) => Ok(UpdateOperation::RemoveVertex(v)),
         UpdateOperation::AddEdge(e) => {
-            let predicate = e
-                .data
-                .ok_or(DecodeError::UnknownOperationType)?;
+            let predicate = e.data.ok_or(DecodeError::UnknownOperationType)?;
             Ok(UpdateOperation::AddEdge(AddEdge {
                 id: e.id,
                 source: e.source,
@@ -170,14 +164,11 @@ pub fn decode(buf: &[u8]) -> Result<crate::RdfGraph, DecodeError> {
 
     for str_op in str_ops {
         let crdf_op = str_op_to_crdf(str_op)?;
-        match &crdf_op {
-            UpdateOperation::AddVertex(v) => {
-                term_to_vertex
-                    .entry(v.term.clone())
-                    .or_default()
-                    .insert(v.id);
-            }
-            _ => {}
+        if let UpdateOperation::AddVertex(v) = &crdf_op {
+            term_to_vertex
+                .entry(v.term.clone())
+                .or_default()
+                .insert(v.id);
         }
         graph
             .apply_downstream(crdf_op)
@@ -332,10 +323,18 @@ mod tests {
         let bob = RdfTerm::iri("http://example.org/Bob");
         let carol = RdfTerm::iri("http://example.org/Carol");
 
-        g.add_triple(alice.clone(), "http://xmlns.com/foaf/0.1/knows", bob.clone())
-            .unwrap();
-        g.add_triple(alice.clone(), "http://xmlns.com/foaf/0.1/knows", carol.clone())
-            .unwrap();
+        g.add_triple(
+            alice.clone(),
+            "http://xmlns.com/foaf/0.1/knows",
+            bob.clone(),
+        )
+        .unwrap();
+        g.add_triple(
+            alice.clone(),
+            "http://xmlns.com/foaf/0.1/knows",
+            carol.clone(),
+        )
+        .unwrap();
         g.add_triple(
             bob.clone(),
             "http://xmlns.com/foaf/0.1/name",

@@ -65,6 +65,7 @@ struct PreviewResult {
 }
 
 /// UI state for the DPO rewriting panel.
+#[derive(Default)]
 pub struct DpoPanel {
     pub open: bool,
     rules: Vec<DpoRule>,
@@ -75,22 +76,6 @@ pub struct DpoPanel {
     match_count: Option<usize>,
     preview: Option<PreviewResult>,
     last_error: Option<String>,
-}
-
-impl Default for DpoPanel {
-    fn default() -> Self {
-        Self {
-            open: false,
-            rules: Vec::new(),
-            selected: None,
-            new_rule_name: String::new(),
-            triple_form: TripleForm::default(),
-            adding_to: None,
-            match_count: None,
-            preview: None,
-            last_error: None,
-        }
-    }
 }
 
 /// Draw the DPO rewriting window (floating, toggled from menu bar).
@@ -266,19 +251,17 @@ fn draw_dpo_content(app: &mut CrdfEditorApp, ui: &mut egui::Ui) {
             draw_triple_form(ui, &mut app.dpo_panel.triple_form);
 
             ui.horizontal(|ui| {
-                if ui.button("✅ Add").clicked() {
-                    if let Some(pt) = app.dpo_panel.triple_form.to_pattern_triple() {
-                        match section {
-                            PatternSection::Lhs => app.dpo_panel.rules[sel].push_lhs(pt),
-                            PatternSection::Interface => {
-                                app.dpo_panel.rules[sel].push_interface(pt)
-                            }
-                            PatternSection::Rhs => app.dpo_panel.rules[sel].push_rhs(pt),
-                        }
-                        app.dpo_panel.triple_form.clear();
-                        app.dpo_panel.adding_to = None;
-                        app.dpo_panel.invalidate_cache();
+                if ui.button("✅ Add").clicked()
+                    && let Some(pt) = app.dpo_panel.triple_form.to_pattern_triple()
+                {
+                    match section {
+                        PatternSection::Lhs => app.dpo_panel.rules[sel].push_lhs(pt),
+                        PatternSection::Interface => app.dpo_panel.rules[sel].push_interface(pt),
+                        PatternSection::Rhs => app.dpo_panel.rules[sel].push_rhs(pt),
                     }
+                    app.dpo_panel.triple_form.clear();
+                    app.dpo_panel.adding_to = None;
+                    app.dpo_panel.invalidate_cache();
                 }
                 if ui.button("❌ Cancel").clicked() {
                     app.dpo_panel.adding_to = None;

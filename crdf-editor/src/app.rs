@@ -96,18 +96,12 @@ impl CrdfEditorApp {
 
     /// Undoes the last action. Returns true if an action was undone.
     pub fn undo(&mut self) -> bool {
-        match self.undo_manager.undo(&mut self.rdf_graph) {
-            Ok(Some(_)) => true,
-            _ => false,
-        }
+        matches!(self.undo_manager.undo(&mut self.rdf_graph), Ok(Some(_)))
     }
 
     /// Redoes the last undone action. Returns true if an action was redone.
     pub fn redo(&mut self) -> bool {
-        match self.undo_manager.redo(&mut self.rdf_graph) {
-            Ok(Some(_)) => true,
-            _ => false,
-        }
+        matches!(self.undo_manager.redo(&mut self.rdf_graph), Ok(Some(_)))
     }
 
     pub fn remove_orphan_positions(&mut self) {

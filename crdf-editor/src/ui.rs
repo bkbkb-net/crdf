@@ -174,14 +174,14 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
 
             // Show current file name in the menu bar
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if let Some(ref path) = app.side_panel.file_path {
-                    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                        ui.label(
-                            egui::RichText::new(name)
-                                .small()
-                                .color(egui::Color32::from_gray(160)),
-                        );
-                    }
+                if let Some(ref path) = app.side_panel.file_path
+                    && let Some(name) = path.file_name().and_then(|n| n.to_str())
+                {
+                    ui.label(
+                        egui::RichText::new(name)
+                            .small()
+                            .color(egui::Color32::from_gray(160)),
+                    );
                 }
             });
         });
@@ -784,8 +784,7 @@ fn parse_term(input: &str) -> Option<(ParsedTerm, &str)> {
     if input.starts_with('<') {
         let (iri, rest) = parse_iri(input)?;
         Some((ParsedTerm::Iri(iri), rest))
-    } else if input.starts_with("_:") {
-        let rest = &input[2..];
+    } else if let Some(rest) = input.strip_prefix("_:") {
         let end = rest.find(|c: char| c.is_whitespace()).unwrap_or(rest.len());
         let id = &rest[..end];
         Some((ParsedTerm::BlankNode(id.to_string()), &rest[end..]))
@@ -843,12 +842,10 @@ fn parse_literal(input: &str) -> Option<(ParsedTerm, &str)> {
 
     let rest = &input[end_pos..];
 
-    if rest.starts_with("^^") {
-        let rest = &rest[2..];
+    if let Some(rest) = rest.strip_prefix("^^") {
         let (dt_iri, rest) = parse_iri(rest)?;
         Some((ParsedTerm::Literal(value, Some(dt_iri), None), rest))
-    } else if rest.starts_with('@') {
-        let rest = &rest[1..];
+    } else if let Some(rest) = rest.strip_prefix('@') {
         let end = rest.find(|c: char| c.is_whitespace()).unwrap_or(rest.len());
         let lang = &rest[..end];
         Some((

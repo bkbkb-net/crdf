@@ -125,10 +125,7 @@ fn literal_display_with_language() {
 #[test]
 fn literal_display_with_datatype() {
     let lit = Literal::new("42").with_datatype(XSD_INTEGER).unwrap();
-    assert_eq!(
-        lit.to_string(),
-        format!("\"42\"^^<{XSD_INTEGER}>")
-    );
+    assert_eq!(lit.to_string(), format!("\"42\"^^<{XSD_INTEGER}>"));
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -209,12 +206,16 @@ fn rdf_term_from_literal() {
 
 fn build_sample_graph() -> RdfGraph {
     let mut g = RdfGraph::new();
-    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alice")).unwrap();
+    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alice"))
+        .unwrap();
     g.add_triple(alice(), FOAF_KNOWS, bob()).unwrap();
-    g.add_triple(alice(), RDF_TYPE, RdfTerm::iri(FOAF_PERSON)).unwrap();
-    g.add_triple(bob(), FOAF_NAME, RdfTerm::literal("Bob")).unwrap();
+    g.add_triple(alice(), RDF_TYPE, RdfTerm::iri(FOAF_PERSON))
+        .unwrap();
+    g.add_triple(bob(), FOAF_NAME, RdfTerm::literal("Bob"))
+        .unwrap();
     g.add_triple(bob(), FOAF_KNOWS, charlie()).unwrap();
-    g.add_triple(charlie(), FOAF_NAME, RdfTerm::literal("Charlie")).unwrap();
+    g.add_triple(charlie(), FOAF_NAME, RdfTerm::literal("Charlie"))
+        .unwrap();
     g
 }
 
@@ -372,7 +373,10 @@ fn graph_query_after_removal() {
 
     g.remove_triple(&alice(), FOAF_KNOWS, &bob()).unwrap();
     assert_eq!(g.triples_for_subject(&alice()).len(), 2);
-    assert!(g.objects_for_subject_predicate(&alice(), FOAF_KNOWS).is_empty());
+    assert!(
+        g.objects_for_subject_predicate(&alice(), FOAF_KNOWS)
+            .is_empty()
+    );
 }
 
 #[test]

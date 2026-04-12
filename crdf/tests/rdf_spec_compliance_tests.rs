@@ -4,7 +4,9 @@
 
 use std::collections::HashSet;
 
-use crdf::{CrdfError, Literal, RdfGraph, RdfTerm, Triple, RDF_LANG_STRING, XSD_INTEGER, XSD_STRING};
+use crdf::{
+    CrdfError, Literal, RDF_LANG_STRING, RdfGraph, RdfTerm, Triple, XSD_INTEGER, XSD_STRING,
+};
 
 const FOAF_NAME: &str = "http://xmlns.com/foaf/0.1/name";
 const FOAF_KNOWS: &str = "http://xmlns.com/foaf/0.1/knows";
@@ -105,8 +107,10 @@ fn with_language_sets_lang_string_datatype() {
 #[test]
 fn with_datatype_clears_language() {
     let lit = Literal::new("42")
-        .with_language("en").unwrap()
-        .with_datatype(XSD_INTEGER).unwrap();
+        .with_language("en")
+        .unwrap()
+        .with_datatype(XSD_INTEGER)
+        .unwrap();
     assert_eq!(lit.datatype(), XSD_INTEGER);
     assert_eq!(lit.language(), None);
 }
@@ -165,7 +169,11 @@ fn subjects_returns_unique_terms() {
 
     let subjects = g.subjects();
     let unique: HashSet<_> = subjects.iter().collect();
-    assert_eq!(subjects.len(), unique.len(), "subjects() must not contain duplicates");
+    assert_eq!(
+        subjects.len(),
+        unique.len(),
+        "subjects() must not contain duplicates"
+    );
     assert_eq!(subjects.len(), 2); // alice and bob
 }
 
@@ -180,7 +188,11 @@ fn objects_returns_unique_terms() {
 
     let objects = g.objects();
     let unique: HashSet<_> = objects.iter().collect();
-    assert_eq!(objects.len(), unique.len(), "objects() must not contain duplicates");
+    assert_eq!(
+        objects.len(),
+        unique.len(),
+        "objects() must not contain duplicates"
+    );
     // "Alice" and bob()
     assert_eq!(objects.len(), 2);
 }
@@ -256,7 +268,9 @@ fn display_escapes_combined_special_chars() {
 
 #[test]
 fn display_typed_literal_escapes_value() {
-    let lit = Literal::new("say \"hi\"").with_datatype(XSD_STRING).unwrap();
+    let lit = Literal::new("say \"hi\"")
+        .with_datatype(XSD_STRING)
+        .unwrap();
     // xsd:string omitted in display, but value must be escaped
     assert_eq!(lit.to_string(), r#""say \"hi\"""#);
 }
@@ -332,8 +346,12 @@ fn add_triple_accepts_iri_subject() {
 #[test]
 fn add_triple_accepts_blank_node_subject() {
     let mut g = RdfGraph::new();
-    g.add_triple(RdfTerm::blank_node("b0"), FOAF_NAME, RdfTerm::literal("Anon"))
-        .unwrap();
+    g.add_triple(
+        RdfTerm::blank_node("b0"),
+        FOAF_NAME,
+        RdfTerm::literal("Anon"),
+    )
+    .unwrap();
     assert_eq!(g.len(), 1);
 }
 
