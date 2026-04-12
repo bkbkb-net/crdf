@@ -12,6 +12,7 @@ categories = ["visualization", "gui"]
 
 [dependencies]
 crdf = { version = "0.1.0", path = "../crdf" }
+crdf-dpo = { version = "0.1.0", path = "../crdf-dpo" }
 eframe = "0.34.1"
 egui = "0.34.1"
 rfd = { version = "0.17.2", optional = true }

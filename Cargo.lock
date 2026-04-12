@@ -701,10 +701,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "crdf-dpo"
+version = "0.1.0"
+dependencies = [
+ "crdf",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "crdf-editor"
 version = "0.1.0"
 dependencies = [
  "crdf",
+ "crdf-dpo",
  "eframe",
  "egui",
  "egui_kittest",

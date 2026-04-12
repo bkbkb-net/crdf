@@ -4,6 +4,7 @@ use crdf::{RdfGraph, RdfTerm, UndoManager};
 use egui::Pos2;
 
 use crate::canvas::Camera;
+use crate::dpo_ui::DpoPanel;
 use crate::graph_view::Interaction;
 use crate::layout::ForceLayout;
 use crate::ui::SidePanel;
@@ -16,6 +17,7 @@ pub struct CrdfEditorApp {
     pub interaction: Interaction,
     pub layout: ForceLayout,
     pub side_panel: SidePanel,
+    pub dpo_panel: DpoPanel,
     pub status_message: Option<(String, f64)>,
 }
 
@@ -35,6 +37,7 @@ impl CrdfEditorApp {
             interaction: Interaction::default(),
             layout: ForceLayout::new(),
             side_panel: SidePanel::default(),
+            dpo_panel: DpoPanel::default(),
             status_message: None,
         }
     }
@@ -129,6 +132,7 @@ impl eframe::App for CrdfEditorApp {
 
         crate::ui::draw_menu_bar(self, ctx);
         crate::ui::draw_side_panel(self, ctx);
+        crate::dpo_ui::draw_dpo_panel(self, ctx);
         crate::ui::draw_operations_panel(self, ctx);
         crate::ui::draw_status_bar(self, ctx);
         crate::graph_view::draw_graph(self, ctx);

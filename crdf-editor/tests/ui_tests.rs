@@ -1,5 +1,5 @@
-use egui_kittest::kittest::{NodeT, Queryable};
 use egui_kittest::Harness;
+use egui_kittest::kittest::{NodeT, Queryable};
 
 use crdf_editor::app::CrdfEditorApp;
 

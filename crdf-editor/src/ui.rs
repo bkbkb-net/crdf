@@ -158,6 +158,18 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                     app.camera.offset = egui::Vec2::ZERO;
                     app.camera.zoom = 1.0;
                 }
+                ui.separator();
+                if ui
+                    .button(if app.dpo_panel.open {
+                        "🔀 Hide DPO Panel"
+                    } else {
+                        "🔀 Show DPO Panel"
+                    })
+                    .clicked()
+                {
+                    ui.close_menu();
+                    app.dpo_panel.open = !app.dpo_panel.open;
+                }
             });
 
             // Show current file name in the menu bar

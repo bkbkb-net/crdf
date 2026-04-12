@@ -1,0 +1,15 @@
+[package]
+name = "crdf-dpo"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Double Pushout (DPO) graph rewriting for CRDF RDF graphs"
+documentation = "https://docs.rs/crdf-dpo/"
+readme = "README.md"
+keywords = ["rdf", "graph-rewriting", "dpo", "crdt"]
+categories = ["data-structures", "algorithms"]
+
+[dependencies]
+crdf = { path = "../crdf" }
+thiserror = "2.0.18"
