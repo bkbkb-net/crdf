@@ -23,6 +23,36 @@ impl Default for ForceLayout {
     }
 }
 
+#[derive(Clone, Copy)]
+struct EdgeLayoutParams {
+    target_distance: f32,
+    strength: f32,
+}
+
+fn edge_layout_params(predicate: &str, object: &RdfTerm) -> EdgeLayoutParams {
+    let short = predicate
+        .rsplit(['#', '/', ':'])
+        .next()
+        .unwrap_or(predicate);
+
+    match short {
+        // RDF's own descriptive properties are satellites of the subject.
+        "type" | "label" | "comment" => EdgeLayoutParams {
+            target_distance: 75.0,
+            strength: ATTRACTION * 4.0,
+        },
+        // Any other literal is an attribute, and sits close to its resource.
+        _ if matches!(object, RdfTerm::Literal(_)) => EdgeLayoutParams {
+            target_distance: 90.0,
+            strength: ATTRACTION * 3.0,
+        },
+        _ => EdgeLayoutParams {
+            target_distance: 200.0,
+            strength: ATTRACTION,
+        },
+    }
+}
+
 impl ForceLayout {
     pub fn new() -> Self {
         Self {
@@ -76,15 +106,19 @@ impl ForceLayout {
             }
         }
 
-        // Attractive forces along edges
+        // Attractive forces along edges. RDF graphs mix very different
+        // relationships: property literals should sit close to their resource,
+        // while relations between resources need more room. Weighting edges
+        // makes the layout read more like the data model instead of a hairball.
         for triple in triples {
             if let (Some(&src), Some(&tgt)) = (
                 positions.get(&triple.subject),
                 positions.get(&triple.object),
             ) {
+                let edge = edge_layout_params(triple.predicate.as_str(), &triple.object);
                 let delta = tgt - src;
                 let dist = delta.length().max(MIN_DISTANCE);
-                let force = ATTRACTION * (dist - 200.0);
+                let force = edge.strength * (dist - edge.target_distance);
                 let dir = delta / dist;
 
                 *forces.get_mut(&triple.subject).unwrap() += dir * force;

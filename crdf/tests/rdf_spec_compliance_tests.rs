@@ -20,10 +20,6 @@ fn bob() -> RdfTerm {
     RdfTerm::iri("http://example.org/bob")
 }
 
-fn carol() -> RdfTerm {
-    RdfTerm::iri("http://example.org/carol")
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 //  §3: "An RDF graph is a set of RDF triples" — duplicate triple handling
 // ════════════════════════════════════════════════════════════════════════════

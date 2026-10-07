@@ -19,10 +19,9 @@ pub struct SidePanel {
     pub file_path: Option<std::path::PathBuf>,
 }
 
-pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
-    #[allow(deprecated)]
-    egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-        egui::menu::bar(ui, |ui| {
+pub fn draw_menu_bar(app: &mut CrdfEditorApp, ui: &mut egui::Ui) {
+    egui::Panel::top("menu_bar").show(ui, |ui| {
+        egui::MenuBar::new().ui(ui, |ui| {
             ui.menu_button("File", |_ui| {
                 #[cfg(feature = "native-dialog")]
                 #[allow(unused_variables)]
@@ -30,7 +29,7 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                 #[cfg(feature = "native-dialog")]
                 {
                     if ui.button("📂 Open…").clicked() {
-                        ui.close_menu();
+                        ui.close();
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("CRDF (FlatBuffers)", &["crdf"])
                             .add_filter("N-Triples", &["nt"])
@@ -64,7 +63,7 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                         }
                     }
                     if ui.button("💾 Save").clicked() {
-                        ui.close_menu();
+                        ui.close();
                         let save_path = if let Some(ref existing) = app.side_panel.file_path {
                             Some(existing.clone())
                         } else {
@@ -89,7 +88,7 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                         }
                     }
                     if ui.button("💾 Save As…").clicked() {
-                        ui.close_menu();
+                        ui.close();
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("CRDF (FlatBuffers)", &["crdf"])
                             .add_filter("N-Triples", &["nt"])
@@ -117,7 +116,7 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                     .add_enabled(app.undo_manager.can_undo(), egui::Button::new("↩ Undo"))
                     .clicked()
                 {
-                    ui.close_menu();
+                    ui.close();
                     if app.undo() {
                         app.remove_orphan_positions();
                         let time = ui.input(|i| i.time);
@@ -128,7 +127,7 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                     .add_enabled(app.undo_manager.can_redo(), egui::Button::new("↪ Redo"))
                     .clicked()
                 {
-                    ui.close_menu();
+                    ui.close();
                     if app.redo() {
                         app.ensure_node_positions();
                         app.remove_orphan_positions();
@@ -147,14 +146,14 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                     })
                     .clicked()
                 {
-                    ui.close_menu();
+                    ui.close();
                     app.layout.running = !app.layout.running;
                     if app.layout.running {
                         app.layout.reset_temperature();
                     }
                 }
                 if ui.button("🔄 Reset Camera").clicked() {
-                    ui.close_menu();
+                    ui.close();
                     app.camera.offset = egui::Vec2::ZERO;
                     app.camera.zoom = 1.0;
                 }
@@ -167,7 +166,7 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
                     })
                     .clicked()
                 {
-                    ui.close_menu();
+                    ui.close();
                     app.dpo_panel.open = !app.dpo_panel.open;
                 }
             });
@@ -188,12 +187,10 @@ pub fn draw_menu_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
     });
 }
 
-pub fn draw_side_panel(app: &mut CrdfEditorApp, ctx: &egui::Context) {
-    #[allow(deprecated)]
-    egui::SidePanel::left("side_panel")
-        .min_width(280.0)
-        .max_width(400.0)
-        .show(ctx, |ui| {
+pub fn draw_side_panel(app: &mut CrdfEditorApp, ui: &mut egui::Ui) {
+    egui::Panel::left("side_panel")
+        .size_range(280.0..=400.0)
+        .show(ui, |ui| {
             ui.heading("crdf Editor");
             ui.separator();
 
@@ -432,9 +429,8 @@ pub fn draw_side_panel(app: &mut CrdfEditorApp, ctx: &egui::Context) {
         });
 }
 
-pub fn draw_status_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
-    #[allow(deprecated)]
-    egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
+pub fn draw_status_bar(app: &mut CrdfEditorApp, ui: &mut egui::Ui) {
+    egui::Panel::bottom("status_bar").show(ui, |ui| {
         ui.horizontal(|ui| {
             if let Some((ref msg, created_at)) = app.status_message {
                 let now = ui.input(|i| i.time);
@@ -454,12 +450,10 @@ pub fn draw_status_bar(app: &mut CrdfEditorApp, ctx: &egui::Context) {
     });
 }
 
-pub fn draw_operations_panel(app: &mut CrdfEditorApp, ctx: &egui::Context) {
-    #[allow(deprecated)]
-    egui::SidePanel::right("operations_panel")
-        .min_width(280.0)
-        .max_width(400.0)
-        .show(ctx, |ui| {
+pub fn draw_operations_panel(app: &mut CrdfEditorApp, ui: &mut egui::Ui) {
+    egui::Panel::right("operations_panel")
+        .size_range(280.0..=400.0)
+        .show(ui, |ui| {
             ui.heading("⚙ CRDT State (2P2P-Graph)");
             ui.separator();
 

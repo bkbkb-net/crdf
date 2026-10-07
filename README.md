@@ -56,6 +56,19 @@ assert_eq!(replica_b.len(), 2);
 
 ## Building
 
+The development workspace builds against a `crdt-graph` checkout beside the
+`crdf` checkout: `../crdt-graph` relative to this repository's root. From the
+`crdf` repository root, get it with:
+
+```sh
+git clone https://github.com/bkbkb-net/crdt-graph.git ../crdt-graph
+```
+
+CI builds against the revision named by `CRDT_GRAPH_REV` in
+`.github/workflows/ci.yml`; check that one out for the same result.
+
+Then build the workspace:
+
 ```sh
 cargo build --workspace
 ```
@@ -74,3 +87,6 @@ Licensed under either of
 - [MIT License](LICENSE-MIT)
 
 at your option.
+
+Run `cargo deny check licenses sources` before accepting dependency updates
+or preparing a release.

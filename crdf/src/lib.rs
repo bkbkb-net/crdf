@@ -16,7 +16,10 @@ pub use term::{
 };
 pub use triple::Triple;
 pub use types::{AddEdge, AddVertex};
-pub use undo::UndoManager;
+pub use undo::{
+    ActionKind, DEFAULT_TRANSACTION_HISTORY_LIMIT, GraphTransaction, TransactionalUndoManager,
+    TripleAction, UndoManager, UndoneTransaction,
+};
 
 pub use crdt_graph::types::{RemoveEdge, RemoveVertex};
 pub use uuid::Uuid;

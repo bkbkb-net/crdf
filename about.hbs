@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>CRDF third-party licenses</title></head>
+<body>
+<h1>CRDF third-party licenses</h1>
+<p>Generated from Cargo.lock. Review and ship this file with binary releases.</p>
+{{#each licenses}}
+<section>
+<h2>{{name}} ({{id}})</h2>
+<p>Used by:</p>
+<ul>
+{{#each used_by}}
+<li>{{crate.name}} {{crate.version}}</li>
+{{/each}}
+</ul>
+<pre>{{text}}</pre>
+</section>
+{{/each}}
+</body>
+</html>

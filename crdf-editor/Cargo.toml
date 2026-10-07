@@ -13,13 +13,19 @@ categories = ["visualization", "gui"]
 [dependencies]
 crdf = { version = "0.1.0", path = "../crdf" }
 crdf-dpo = { version = "0.1.0", path = "../crdf-dpo" }
-eframe = "0.34.1"
-egui = "0.34.1"
+eframe = { version = "=0.36.1", default-features = false, features = [
+    "accesskit",
+    "glow",
+    "wayland",
+    "x11",
+] }
+egui = { version = "=0.36.1", default-features = false }
 rfd = { version = "0.17.2", optional = true }
 
 [features]
-default = ["native-dialog"]
+default = ["native-dialog", "default-fonts"]
 native-dialog = ["dep:rfd"]
+default-fonts = ["eframe/default_fonts", "egui/default_fonts"]
 
 [dev-dependencies]
-egui_kittest = { version = "0.34.1", features = ["eframe"] }
+egui_kittest = { version = "=0.36.1", features = ["eframe"] }

@@ -8,6 +8,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # crdf builds against the crdt-graph checked out beside it
+  # (`crdf/Cargo.toml`: `path = "../../crdt-graph"`), at this revision.
+  CRDT_GRAPH_REV: 96c0a942aa93824aad821b35256d4958cf104a87
 
 jobs:
   check:
@@ -15,33 +18,83 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: crdf
+      - uses: actions/checkout@v4
+        with:
+          repository: bkbkb-net/crdt-graph
+          ref: ${{ env.CRDT_GRAPH_REV }}
+          path: crdt-graph
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo check --workspace
+      - run: cargo check --workspace --locked
+        working-directory: crdf
 
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: crdf
+      - uses: actions/checkout@v4
+        with:
+          repository: bkbkb-net/crdt-graph
+          ref: ${{ env.CRDT_GRAPH_REV }}
+          path: crdt-graph
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --workspace
+      - run: cargo test --workspace --all-features --locked
+        working-directory: crdf
 
   fmt:
     name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: crdf
+      - uses: actions/checkout@v4
+        with:
+          repository: bkbkb-net/crdt-graph
+          ref: ${{ env.CRDT_GRAPH_REV }}
+          path: crdt-graph
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
       - run: cargo fmt --all -- --check
+        working-directory: crdf
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: crdf
+      - uses: actions/checkout@v4
+        with:
+          repository: bkbkb-net/crdt-graph
+          ref: ${{ env.CRDT_GRAPH_REV }}
+          path: crdt-graph
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+        working-directory: crdf
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: crdf
+      - uses: actions/checkout@v4
+        with:
+          repository: bkbkb-net/crdt-graph
+          ref: ${{ env.CRDT_GRAPH_REV }}
+          path: crdt-graph
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo doc --workspace --no-deps --locked
+        working-directory: crdf

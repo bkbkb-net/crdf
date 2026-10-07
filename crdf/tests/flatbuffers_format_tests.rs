@@ -392,8 +392,8 @@ fn flatbuffers_and_ntriples_produce_same_triples() {
     assert!(nt_content.contains("\"Bob\""));
 
     // FlatBuffers preserves CRDT history, N-Triples does not
-    assert!(fb_graph.all_vertices_added().len() > 0);
-    assert!(fb_graph.all_edges_added().len() > 0);
+    assert!(!fb_graph.all_vertices_added().is_empty());
+    assert!(!fb_graph.all_edges_added().is_empty());
 
     fs::remove_file(fb_path).unwrap();
     fs::remove_file(nt_path).unwrap();

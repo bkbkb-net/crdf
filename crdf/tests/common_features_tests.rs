@@ -162,8 +162,12 @@ fn literal_from_i64() {
 
 #[test]
 fn literal_from_f64() {
-    let lit = Literal::from(3.14f64);
-    assert_eq!(lit.value(), "3.14");
+    // 2.75 rather than 3.14: the value is incidental -- this is about a
+    // non-integer double printing as itself and carrying xsd:double --
+    // and 3.14 makes clippy read a test fixture as an approximation of
+    // pi, which is an error in a repository whose CI is -D warnings.
+    let lit = Literal::from(2.75f64);
+    assert_eq!(lit.value(), "2.75");
     assert_eq!(lit.datatype(), XSD_DOUBLE);
 }
 

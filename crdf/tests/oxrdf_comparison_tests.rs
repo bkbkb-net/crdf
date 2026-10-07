@@ -309,8 +309,8 @@ fn display_format_matches_ntriples_style() {
     // Simple literal: oxrdf uses "hello" while crdf uses "hello"
     let lit = RdfTerm::literal("hello");
     let ox_lit = oxrdf::Literal::new_simple_literal("hello");
-    assert_eq!(lit.to_string(), format!("\"hello\""));
-    assert_eq!(ox_lit.to_string(), format!("\"hello\""));
+    assert_eq!(lit.to_string(), "\"hello\"");
+    assert_eq!(ox_lit.to_string(), "\"hello\"");
 }
 
 // ---------------------------------------------------------------------------

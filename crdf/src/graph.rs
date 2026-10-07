@@ -50,6 +50,7 @@ pub enum RdfFileFormat {
 /// or object becomes a vertex in the underlying CRDT graph. Each triple becomes
 /// a directed edge from the subject vertex to the object vertex, with the
 /// predicate IRI stored as edge data.
+#[derive(Clone)]
 pub struct RdfGraph {
     graph: Graph,
     term_to_vertex: HashMap<RdfTerm, HashSet<Uuid>>,
@@ -148,8 +149,7 @@ impl RdfGraph {
             .ok_or(CrdfError::TripleNotFound)?;
 
         let edge = self
-            .graph
-            .edges()
+            .active_edges()
             .find(|ea| {
                 subject_ids.contains(&ea.source)
                     && object_ids.contains(&ea.target)
@@ -201,8 +201,7 @@ impl RdfGraph {
     pub fn triples(&self) -> Vec<Triple> {
         let vertex_to_term = self.vertex_to_term_map();
 
-        self.graph
-            .edges()
+        self.active_edges()
             .filter_map(|ea| {
                 let subject = vertex_to_term.get(&ea.source)?;
                 let object = vertex_to_term.get(&ea.target)?;
@@ -241,7 +240,7 @@ impl RdfGraph {
             return false;
         };
 
-        self.graph.edges().any(|ea| {
+        self.active_edges().any(|ea| {
             subject_ids.contains(&ea.source)
                 && object_ids.contains(&ea.target)
                 && ea.predicate == predicate
@@ -250,12 +249,12 @@ impl RdfGraph {
 
     /// Returns the number of active triples in the graph.
     pub fn len(&self) -> usize {
-        self.graph.edge_count()
+        self.active_edges().count()
     }
 
     /// Returns `true` if the graph contains no active triples.
     pub fn is_empty(&self) -> bool {
-        self.graph.is_empty()
+        self.active_edges().next().is_none()
     }
 
     /// Returns all vertex-add operations (`V_A`) in the underlying CRDT graph.
@@ -283,8 +282,7 @@ impl RdfGraph {
         let vertex_to_term = self.vertex_to_term_map();
 
         let mut seen = HashSet::new();
-        self.graph
-            .edges()
+        self.active_edges()
             .filter_map(|ea| vertex_to_term.get(&ea.source).copied())
             .filter(|term| seen.insert(*term as *const RdfTerm))
             .collect()
@@ -292,8 +290,10 @@ impl RdfGraph {
 
     /// Returns all unique predicates that appear in active triples.
     pub fn predicates(&self) -> Vec<&str> {
-        let mut predicates: Vec<&str> =
-            self.graph.edges().map(|ea| ea.predicate.as_str()).collect();
+        let mut predicates: Vec<&str> = self
+            .active_edges()
+            .map(|ea| ea.predicate.as_str())
+            .collect();
         predicates.sort();
         predicates.dedup();
         predicates
@@ -304,8 +304,7 @@ impl RdfGraph {
         let vertex_to_term = self.vertex_to_term_map();
 
         let mut seen = HashSet::new();
-        self.graph
-            .edges()
+        self.active_edges()
             .filter_map(|ea| vertex_to_term.get(&ea.target).copied())
             .filter(|term| seen.insert(*term as *const RdfTerm))
             .collect()
@@ -363,18 +362,39 @@ impl RdfGraph {
         term: RdfTerm,
     ) -> Result<(Option<AddVertex>, Uuid), CrdfError> {
         if let Some(ids) = self.term_to_vertex.get(&term) {
-            // Return any existing UUID for this term
-            Ok((None, *ids.iter().next().unwrap()))
-        } else {
-            let vertex = AddVertex {
-                id: Uuid::now_v7(),
-                term: term.clone(),
-            };
-            let id = vertex.id;
-            self.graph.prepare(vertex.clone().into())?;
-            self.term_to_vertex.entry(term).or_default().insert(id);
-            Ok((Some(vertex), id))
+            // Only a history that removed vertices — another replica's; this
+            // crate never removes one — can hold a dead id for a term. Without
+            // one, any id will do, as it always did.
+            let removals = !self.all_vertices_removed().is_empty();
+            if let Some(id) = ids
+                .iter()
+                .find(|id| !removals || self.graph.lookup_vertex(id))
+            {
+                return Ok((None, *id));
+            }
         }
+        // A tombstone is permanent; re-adding the term needs a fresh UUID.
+        let vertex = AddVertex {
+            id: Uuid::now_v7(),
+            term: term.clone(),
+        };
+        let id = vertex.id;
+        self.graph.prepare(vertex.clone().into())?;
+        self.term_to_vertex.entry(term).or_default().insert(id);
+        Ok((Some(vertex), id))
+    }
+
+    /// An RDF edge is visible only while both endpoints are present, as a
+    /// 2P2P-Graph defines it. Checked only when some vertex was removed —
+    /// which this crate never does; a foreign history can — so ordinary use
+    /// pays nothing for it.
+    fn active_edges(&self) -> impl Iterator<Item = &AddEdge> {
+        let live: Option<HashSet<Uuid>> = (!self.all_vertices_removed().is_empty())
+            .then(|| self.graph.vertices().map(|vertex| vertex.id).collect());
+        self.graph.edges().filter(move |edge| {
+            live.as_ref()
+                .is_none_or(|live| live.contains(&edge.source) && live.contains(&edge.target))
+        })
     }
 
     /// Converts this graph into an `oxrdf::Graph`.

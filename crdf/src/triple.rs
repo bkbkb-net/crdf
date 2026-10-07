@@ -3,7 +3,7 @@ use std::fmt;
 use crate::term::RdfTerm;
 
 /// An RDF triple (statement) consisting of subject, predicate, and object.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Triple {
     pub subject: RdfTerm,
     pub predicate: String,

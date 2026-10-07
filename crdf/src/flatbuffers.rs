@@ -37,10 +37,11 @@ fn encode_term(term: &RdfTerm) -> String {
 
 /// Deserialises an [`RdfTerm`] from the compact string representation.
 fn decode_term(s: &str) -> Result<RdfTerm, DecodeError> {
-    if s.is_empty() {
+    // Checked: the tag is one ASCII byte, but `s` comes from the file, and
+    // a first character wider than a byte would make `split_at` panic.
+    let Some((tag, rest)) = s.split_at_checked(1) else {
         return Err(DecodeError::UnknownOperationType);
-    }
-    let (tag, rest) = s.split_at(1);
+    };
     match tag {
         "I" => Ok(RdfTerm::Iri(rest.to_string())),
         "B" => Ok(RdfTerm::BlankNode(rest.to_string())),
@@ -353,6 +354,22 @@ mod tests {
             "http://xmlns.com/foaf/0.1/name",
             &RdfTerm::literal("Bob")
         ));
+    }
+
+    /// A term's tag is one ASCII byte, but the data is arbitrary UTF-8
+    /// from the file. A first character wider than one byte used to reach
+    /// `str::split_at(1)` and panic mid-character instead of being
+    /// reported as a malformed file.
+    #[test]
+    fn a_term_starting_with_a_multibyte_character_is_a_decode_error() {
+        for data in ["日本", "é", "🎵x"] {
+            let ops = vec![UpdateOperation::AddVertex(str_types::AddVertex {
+                id: uuid::Uuid::now_v7(),
+                data: Some(data.to_owned()),
+            })];
+            let buf = fb_string::encode_operation_log(&ops);
+            assert!(decode(&buf).is_err(), "{data:?} was accepted");
+        }
     }
 
     #[test]

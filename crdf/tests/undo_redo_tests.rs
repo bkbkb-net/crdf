@@ -1,4 +1,4 @@
-use crdf::{CrdfError, RdfGraph, RdfTerm, UndoManager};
+use crdf::{RdfGraph, RdfTerm, TransactionalUndoManager, UndoManager};
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -27,8 +27,7 @@ fn setup_graph_with_undo() -> (RdfGraph, UndoManager) {
 #[test]
 fn undo_add_triple() {
     let (mut g, mut um) = setup_graph_with_undo();
-    let op = um
-        .add_triple(&mut g, alice(), FOAF_NAME, RdfTerm::literal("Alice"))
+    um.add_triple(&mut g, alice(), FOAF_NAME, RdfTerm::literal("Alice"))
         .unwrap();
     assert_eq!(g.len(), 1);
 
@@ -472,4 +471,197 @@ fn full_multi_replica_undo_redo_cycle() {
     rb.apply_downstream(redo2).unwrap();
     assert_eq!(ra.len(), 2);
     assert_eq!(rb.len(), 2);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  Transactional (batched) undo / redo
+// ════════════════════════════════════════════════════════════════
+
+#[test]
+fn transactional_duplicate_triples_survive_undo_redo() {
+    let mut g = RdfGraph::new();
+    let mut um = TransactionalUndoManager::new();
+    let before = g.clone();
+    g.add_triple(alice(), FOAF_KNOWS, bob()).unwrap();
+    g.add_triple(alice(), FOAF_KNOWS, bob()).unwrap();
+    assert_eq!(g.len(), 2);
+    assert!(um.commit_diff("add two copies", &before, &g));
+
+    um.undo(&mut g).unwrap().expect("transaction present");
+    assert_eq!(g.len(), 0);
+
+    um.redo(&mut g).unwrap().expect("transaction present");
+    assert_eq!(g.len(), 2);
+}
+
+#[test]
+fn transactional_diff_counts_existing_and_removed_copies() {
+    for before_count in 0..=3 {
+        for after_count in 0..=3 {
+            let mut g = RdfGraph::new();
+            let mut um = TransactionalUndoManager::new();
+            for _ in 0..before_count {
+                g.add_triple(alice(), FOAF_KNOWS, bob()).unwrap();
+            }
+            let before = g.clone();
+            for _ in before_count..after_count {
+                g.add_triple(alice(), FOAF_KNOWS, bob()).unwrap();
+            }
+            for _ in after_count..before_count {
+                g.remove_triple(&alice(), FOAF_KNOWS, &bob()).unwrap();
+            }
+            assert_eq!(
+                um.commit_diff("change copies", &before, &g),
+                before_count != after_count
+            );
+            um.undo(&mut g).unwrap();
+            assert_eq!(g.len(), before_count);
+            um.redo(&mut g).unwrap();
+            assert_eq!(g.len(), after_count);
+        }
+    }
+}
+
+#[test]
+fn transactional_commit_diff_records_added_and_removed_triples() {
+    let mut g = RdfGraph::new();
+    let mut um = TransactionalUndoManager::new();
+
+    // Seed one triple so the first "user edit" both adds and removes.
+    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alice"))
+        .unwrap();
+
+    let before = g.clone();
+    g.remove_triple(&alice(), FOAF_NAME, &RdfTerm::literal("Alice"))
+        .unwrap();
+    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alicia"))
+        .unwrap();
+    g.add_triple(bob(), FOAF_AGE, RdfTerm::literal("30"))
+        .unwrap();
+
+    assert!(um.commit_diff("rename alice + add bob age", &before, &g));
+    assert!(um.can_undo());
+    assert!(!um.can_redo());
+    assert_eq!(um.peek_undo_label(), Some("rename alice + add bob age"));
+
+    // One undo step must restore *all* three triple-level effects.
+    let undone = um.undo(&mut g).unwrap().expect("transaction present");
+    assert_eq!(undone.label, "rename alice + add bob age");
+    assert!(g.contains_triple(&alice(), FOAF_NAME, &RdfTerm::literal("Alice")));
+    assert!(!g.contains_triple(&alice(), FOAF_NAME, &RdfTerm::literal("Alicia")));
+    assert!(!g.contains_triple(&bob(), FOAF_AGE, &RdfTerm::literal("30")));
+
+    // One redo step re-applies all three effects.
+    let redone = um.redo(&mut g).unwrap().expect("transaction present");
+    assert_eq!(redone.label, "rename alice + add bob age");
+    assert!(!g.contains_triple(&alice(), FOAF_NAME, &RdfTerm::literal("Alice")));
+    assert!(g.contains_triple(&alice(), FOAF_NAME, &RdfTerm::literal("Alicia")));
+    assert!(g.contains_triple(&bob(), FOAF_AGE, &RdfTerm::literal("30")));
+}
+
+#[test]
+fn transactional_commit_diff_on_empty_change_records_nothing() {
+    let mut g = RdfGraph::new();
+    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alice"))
+        .unwrap();
+
+    let before = g.clone();
+    let after = g.clone();
+    let mut um = TransactionalUndoManager::new();
+    assert!(!um.commit_diff("noop", &before, &after));
+    assert!(!um.can_undo());
+}
+
+#[test]
+fn transactional_fresh_commit_clears_redo() {
+    let mut g = RdfGraph::new();
+    let mut um = TransactionalUndoManager::new();
+
+    let before = g.clone();
+    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alice"))
+        .unwrap();
+    assert!(um.commit_diff("add alice", &before, &g));
+
+    um.undo(&mut g).unwrap();
+    assert!(um.can_redo());
+
+    // A new transaction must invalidate the redo stack.
+    let before = g.clone();
+    g.add_triple(bob(), FOAF_NAME, RdfTerm::literal("Bob"))
+        .unwrap();
+    assert!(um.commit_diff("add bob", &before, &g));
+    assert!(!um.can_redo());
+}
+
+#[test]
+fn transactional_history_limit_drops_oldest() {
+    let mut g = RdfGraph::new();
+    let mut um = TransactionalUndoManager::with_limit(2);
+    for i in 0..5 {
+        let before = g.clone();
+        g.add_triple(
+            RdfTerm::iri(format!("http://example.org/n{i}")),
+            FOAF_NAME,
+            RdfTerm::literal(format!("n{i}")),
+        )
+        .unwrap();
+        assert!(um.commit_diff(format!("add n{i}"), &before, &g));
+    }
+    // Only the most recent two transactions survive.
+    assert_eq!(um.peek_undo_label(), Some("add n4"));
+    um.undo(&mut g).unwrap();
+    assert_eq!(um.peek_undo_label(), Some("add n3"));
+    um.undo(&mut g).unwrap();
+    assert!(!um.can_undo());
+}
+
+#[test]
+fn transactional_undo_is_idempotent_when_inverse_is_noop() {
+    // If the graph already lacks the added triple (e.g. a peer
+    // converged on the same removal), undo must still pop the
+    // transaction without erroring.
+    let mut g = RdfGraph::new();
+    let mut um = TransactionalUndoManager::new();
+    let before = g.clone();
+    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alice"))
+        .unwrap();
+    assert!(um.commit_diff("add alice", &before, &g));
+
+    // Remove the triple out-of-band before undoing.
+    g.remove_triple(&alice(), FOAF_NAME, &RdfTerm::literal("Alice"))
+        .unwrap();
+    let undone = um.undo(&mut g).unwrap().expect("transaction popped");
+    assert_eq!(undone.label, "add alice");
+    assert!(
+        undone.ops.is_empty(),
+        "no compensating op when already removed"
+    );
+}
+
+#[test]
+fn transactional_peek_shows_a_transaction_without_taking_it() {
+    let mut g = RdfGraph::new();
+    let mut um = TransactionalUndoManager::new();
+    assert!(um.peek_undo().is_none());
+    let before = g.clone();
+    g.add_triple(alice(), FOAF_NAME, RdfTerm::literal("Alice"))
+        .unwrap();
+    assert!(um.commit_diff("add alice", &before, &g));
+
+    let tx = um.peek_undo().expect("one transaction");
+    assert_eq!(tx.label(), "add alice");
+    let forward: Vec<_> = tx
+        .forward()
+        .iter()
+        .map(|action| (*action.kind(), action.object().clone()))
+        .collect();
+    assert_eq!(
+        forward,
+        [(crdf::ActionKind::Add, RdfTerm::literal("Alice"))]
+    );
+    // Looking moved nothing.
+    assert!(um.can_undo() && !um.can_redo());
+    um.undo(&mut g).unwrap();
+    assert!(um.peek_undo().is_none());
+    assert_eq!(um.peek_redo().map(|tx| tx.label()), Some("add alice"));
 }

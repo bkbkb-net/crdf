@@ -284,7 +284,7 @@ fn many_triples() {
     for i in 0..100 {
         g.add_triple(
             alice(),
-            &format!("http://example.org/prop{i}"),
+            format!("http://example.org/prop{i}"),
             RdfTerm::literal(format!("value{i}")),
         )
         .unwrap();
