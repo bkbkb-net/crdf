@@ -1,0 +1,39 @@
+[package]
+name = "crdf-circuit"
+version = "0.1.0"
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+description = "General-purpose synchronous NAND+register circuits persisted as CRDF graphs, with a bit-sliced evaluator and optional Cranelift JIT."
+readme = "README.md"
+documentation = "https://docs.rs/crdf-circuit/"
+keywords = ["crdt", "rdf", "circuit", "nand", "simulation"]
+categories = ["data-structures", "simulation"]
+
+[dependencies]
+crdf = { path = "../crdf", version = "0.1.0" }
+thiserror = "2.0.18"
+uuid = { version = "1.23.1", features = ["v4", "v5"] }
+
+# Cranelift (JIT backend): Apache-2.0 WITH LLVM-exception.
+cranelift-codegen = { version = "0.133.1", optional = true }
+cranelift-frontend = { version = "0.133.1", optional = true }
+cranelift-jit = { version = "0.133.1", optional = true }
+cranelift-module = { version = "0.133.1", optional = true }
+cranelift-native = { version = "0.133.1", optional = true }
+
+[features]
+default = ["jit"]
+jit = [
+    "dep:cranelift-codegen",
+    "dep:cranelift-frontend",
+    "dep:cranelift-jit",
+    "dep:cranelift-module",
+    "dep:cranelift-native",
+]
+
+[dev-dependencies]
+oxrdf = "0.3.3"
+
+[package.metadata.docs.rs]
+all-features = true

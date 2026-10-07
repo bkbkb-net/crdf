@@ -1,5 +1,5 @@
 [workspace]
-members = ["crdf", "crdf-editor", "crdf-dpo"]
+members = ["crdf", "crdf-circuit", "crdf-editor", "crdf-dpo"]
 resolver = "3"
 
 [workspace.package]

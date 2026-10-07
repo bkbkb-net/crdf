@@ -44,6 +44,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace --all-features --locked
         working-directory: crdf
+      - run: cargo test -p crdf-circuit --no-default-features --locked
+        working-directory: crdf
 
   fmt:
     name: Format

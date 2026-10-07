@@ -12,6 +12,7 @@ This repository is a Cargo workspace containing the following crates:
 | Crate | Description | Links |
 |-------|-------------|-------|
 | [**crdf**](crdf/) | Core library — CRDT-based RDF graph with replication, pattern matching, and file I/O | [![Crates.io](https://img.shields.io/crates/v/crdf?style=flat-square)](https://crates.io/crates/crdf) [![Docs.rs](https://img.shields.io/docsrs/crdf?style=flat-square)](https://docs.rs/crdf) |
+| [**crdf-circuit**](crdf-circuit/) | Synchronous NAND+register circuits persisted as CRDF, with bit-sliced evaluation and optional JIT | — |
 | [**crdf-dpo**](crdf-dpo/) | Double Pushout (DPO) graph rewriting for RDF graphs | — |
 | [**crdf-editor**](crdf-editor/) | Visual RDF graph editor powered by egui (with DPO support) | — |
 
@@ -88,5 +89,6 @@ Licensed under either of
 
 at your option.
 
-Run `cargo deny check licenses sources` before accepting dependency updates
-or preparing a release.
+Dependency, provenance and preliminary patent review notes are maintained in
+[LEGAL_REVIEW.md](LEGAL_REVIEW.md). Run `cargo deny check licenses sources`
+before accepting dependency updates or preparing a release.

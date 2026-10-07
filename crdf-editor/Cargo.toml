@@ -16,16 +16,17 @@ crdf-dpo = { version = "0.1.0", path = "../crdf-dpo" }
 eframe = { version = "=0.36.1", default-features = false, features = [
     "accesskit",
     "glow",
-    "wayland",
-    "x11",
 ] }
 egui = { version = "=0.36.1", default-features = false }
 rfd = { version = "0.17.2", optional = true }
 
 [features]
-default = ["native-dialog", "default-fonts"]
+default = ["native-dialog", "default-fonts", "linux-backends"]
 native-dialog = ["dep:rfd"]
 default-fonts = ["eframe/default_fonts", "egui/default_fonts"]
+# Wayland and X11 windows on Linux. On by default; an embedder that turns the
+# defaults off leaves them out.
+linux-backends = ["eframe/wayland", "eframe/x11"]
 
 [dev-dependencies]
 egui_kittest = { version = "=0.36.1", features = ["eframe"] }

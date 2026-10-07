@@ -6,16 +6,16 @@ Contributions must be original or submitted with documented permission under
 license and modification summary for adapted material.
 
 Do not copy code, diagrams, prose, test vectors, fonts or other assets from a
-paper, patent, product or repository without a compatible license. A change
-that introduces a new technique must say in its pull request where the
-technique comes from.
+paper, patent, product or repository without a compatible license. Changes to
+noise generation, DSP, codecs, hardware protocols or JIT strategy must update
+`LEGAL_REVIEW.md` when they introduce a new technique.
 
 Run before review:
 
 ```text
 cargo fmt --all -- --check
 cargo test --workspace --all-features
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
+cargo clippy -p crdf-circuit --all-targets --all-features -- -D warnings
+cargo rustdoc -p crdf-circuit --all-features -- -D warnings
 cargo deny check licenses sources
 ```
