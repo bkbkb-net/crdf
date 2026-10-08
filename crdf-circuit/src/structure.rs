@@ -780,7 +780,7 @@ mod tree_tests {
     use crate::model::CellKind;
     use crate::stdlib::{Stdlib, build_select16_plain, build_select16_treed};
 
-    /// The second retained structure, and the one that settles what was
+    /// The second construction case (`tree`), and the one that settles what was
     /// missing.
     ///
     /// `build_select16`'s loop already *looked* combinatorial — halve the
